@@ -178,20 +178,20 @@ MiscTab:CreateToggle({
                 local VirtualInputManager = game:GetService("VirtualInputManager")
                 local function simulateKeyPress(key)
                     VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    task.wait(0.1)
+                    task.wait(0.05)  -- Reduced wait time
                     VirtualInputManager:SendKeyEvent(false, key, false, game)
                 end
                 local function simulateKeySequence()
                     if proximityFired then
-                        task.wait(1)
+                        task.wait(0.5)  -- Reduced initial wait time
                         simulateKeyPress(Enum.KeyCode.BackSlash)
-                        task.wait(1)
-                        for i = 1, 7 do
+                        task.wait(0.5)  -- Reduced wait time
+                        for i = 1, 8 do
                             simulateKeyPress(Enum.KeyCode.Return)
                             simulateKeyPress(Enum.KeyCode.BackSlash)
-                            task.wait(0.2)
+                            task.wait(0.1)  -- Reduced wait time
                         end
-                        task.wait(0.5)
+                        task.wait(0.2)  -- Reduced wait time
                         proximityFired = false
                     end
                 end
@@ -203,6 +203,7 @@ MiscTab:CreateToggle({
         end
     end
 })
+
 BossFarmTab:CreateToggle({
     Name = "Teleport to Boss",
     Info = "Teleports to the boss area",
@@ -211,36 +212,45 @@ BossFarmTab:CreateToggle({
     Callback = function(Value)
         teleportToBossActive = Value
         if Value then
-            task.wait(1)
-            local TweenService = game:GetService("TweenService")
-            local VirtualInputManager = game:GetService("VirtualInputManager")
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local rootPart = character:WaitForChild("HumanoidRootPart")
-            local targetPosition = Vector3.new(3525.0185546875, 5990.5298515625, 4049.24755859375)
+            task.spawn(function()
+                local TweenService = game:GetService("TweenService")
+                local VirtualInputManager = game:GetService("VirtualInputManager")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local rootPart = character:WaitForChild("HumanoidRootPart")
+                local targetPosition = Vector3.new(3525.0185546875, 5990.5298515625, 4049.24755859375)
 
-            local tweenInfo = TweenInfo.new(
-                0,
-                Enum.EasingStyle.Linear,
-                Enum.EasingDirection.Out
-            )
+                local tweenInfo = TweenInfo.new(
+                    0,
+                    Enum.EasingStyle.Linear,
+                    Enum.EasingDirection.Out
+                )
 
-            local goal = {
-                CFrame = CFrame.new(targetPosition)
-            }
+                local function tweenToTarget()
+                    local goal = {
+                        CFrame = CFrame.new(targetPosition)
+                    }
 
-            local tween = TweenService:Create(rootPart, tweenInfo, goal)
+                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
 
-            local function simulateKeyPress(key)
-                VirtualInputManager:SendKeyEvent(true, key, false, game)
-                task.wait(0.1)
-                VirtualInputManager:SendKeyEvent(false, key, false, game)
-            end
+                    local function simulateKeyPress(key)
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        task.wait(0.1)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    end
 
-            tween:Play()
-            tween.Completed:Connect(function()
-                task.wait(3)
-                simulateKeyPress(Enum.KeyCode.J)
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        task.wait(3)
+                        simulateKeyPress(Enum.KeyCode.J)
+                    end)
+
+                    tween.Completed:Wait()
+                end
+
+                while teleportToBossActive do
+                    tweenToTarget()
+                end
             end)
         end
     end,
@@ -263,7 +273,7 @@ BossFarmTab:CreateToggle({
                 end
 
                 while autoReplayActive do
-                task.wait(75)
+                task.wait(160)
                     simulateKeyPress(Enum.KeyCode.BackSlash)
                     task.wait(1)
                     for i = 1, 5 do
