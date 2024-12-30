@@ -1,3 +1,4 @@
+local scriptContent = [[
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "ZeroHub",
@@ -394,3 +395,6 @@ InvestigateTab:CreateToggle({
         end
     end,
 })
+]]
+
+loadstring(scriptContent)()
