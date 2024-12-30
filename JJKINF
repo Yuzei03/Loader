@@ -1,0 +1,266 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+    Name = "ZeroHub",
+    LoadingTitle = "ZeroHub",
+    LoadingSubtitle = "by zerobaki",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ZeroHub",
+        FileName = "Config"
+    },
+    KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Main")
+local BossFarmTab = Window:CreateTab("Boss Farm")
+local InvestigateTab = Window:CreateTab("Investigate")
+local MiscTab = Window:CreateTab("Misc")
+
+-- Variable to store the loop status
+local killLoopActive = false
+local autoCollectActive = false
+local autoLootActive = false
+local teleportToBossActive = false
+local autoCurseObjectActive = false
+
+MainTab:CreateToggle({
+    Name = "Insta Kill",
+    Info = "Kills all non-player humanoids",
+    CurrentValue = false,
+    Flag = "KillToggle",
+    Callback = function(Value)
+        killLoopActive = Value
+
+        if Value then
+            -- Start the loop in a separate thread
+            task.spawn(function()
+                while killLoopActive do
+                    for _, model in pairs(workspace:GetDescendants()) do
+                        if model:IsA("Model") then
+                            local humanoid = model:FindFirstChild("Humanoid")
+                            local isPlayer = game:GetService("Players"):GetPlayerFromCharacter(model)
+                            if humanoid and not isPlayer then
+                                humanoid.Health = 0
+                            end
+                        end
+                    end
+                    -- Wait for a short interval to avoid overwhelming the game
+                    task.wait(0.1) -- Adjust the delay as needed
+                end
+            end)
+        end
+    end,
+})
+
+BossFarmTab:CreateToggle({
+    Name = "Auto Collect",
+    Info = "Automatically collects nearby items",
+    CurrentValue = false,
+    Flag = "AutoCollectToggle",
+    Callback = function(Value)
+        autoCollectActive = Value
+
+        if Value then
+            -- Start the auto collection loop
+            task.spawn(function()
+                -- Wait for 65 seconds before starting the collection
+                task.wait(20)
+                while autoCollectActive do
+                    -- Required Services
+                    local VirtualInputManager = game:GetService("VirtualInputManager")
+
+                    -- Function to simulate pressing a key
+                    local function simulateKeyPress(key)
+                        -- Simulate pressing the key (true means key down)
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        task.wait(0.1) -- Small delay to simulate holding the key
+                        -- Simulate releasing the key (false means key up)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                        print("Simulated pressing the '" .. key.Name .. "' key!")
+                    end
+
+                    -- Function to simulate the desired key sequence
+                    local function simulateKeySequence()
+                        -- Simulate pressing the Backslash key
+                        simulateKeyPress(Enum.KeyCode.BackSlash)
+                        
+                        -- Wait for 2 seconds
+                        task.wait(1)
+                        
+                        -- Simulate pressing the Enter key 5 times
+                        for i = 1, 5 do
+                            simulateKeyPress(Enum.KeyCode.Return)
+                            task.wait(0.2) -- Small delay between each Enter key press
+                        end
+                        
+                        -- Wait for 5 seconds before repeating
+                        task.wait(2.6)
+                    end
+
+                    -- Loop to repeat the process indefinitely
+                    while autoCollectActive do
+                        simulateKeySequence()
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+BossFarmTab:CreateToggle({
+    Name = "Auto Loot",
+    Info = "Automatically loots nearby chests",
+    CurrentValue = false,
+    Flag = "AutoLootToggle",
+    Callback = function(Value)
+        autoLootActive = Value
+
+        if Value then
+            -- Start the auto loot loop
+            task.spawn(function()
+                local DropsFolder = game.Workspace.Objects.MissionItems
+
+                -- Function to fire a single ProximityPrompt
+                local function firePrompt(CursedObject)
+                    if CursedObject:IsA("MeshPart") then
+                        local prompt = CursedObject:FindFirstChildOfClass("ProximityPrompt")
+                        if prompt and prompt.ActionText == "Collect" then
+                            prompt:InputHoldBegin()
+                            task.wait(5) -- Small delay, to simulate the input hold
+                            prompt:InputHoldEnd()
+                        end
+                    end
+                end
+
+                -- Function to loop through and fire all prompts in parallel
+                local function loopAndFirePrompts()
+                    for _, chest in ipairs(DropsFolder:GetChildren()) do
+                        coroutine.wrap(firePrompt)(chest)  -- Fire prompt for each chest in parallel
+                    end
+                end
+
+                -- Continuously loop the process (adjust interval as needed)
+                while autoLootActive do
+                    loopAndFirePrompts()
+                    task.wait(1) -- Wait for 1 second before looping again (can adjust this as needed)
+                end
+            end)
+        end
+    end,
+})
+
+BossFarmTab:CreateToggle({
+    Name = "Teleport to Boss",
+    Info = "Teleports to the boss area",
+    CurrentValue = false,
+    Flag = "TeleportToBossToggle",
+    Callback = function(Value)
+        teleportToBossActive = Value
+
+        if Value then
+            -- Required Services
+            task.wait(1)
+            local TweenService = game:GetService("TweenService")
+            local VirtualInputManager = game:GetService("VirtualInputManager")
+
+            -- Get the player's character and HumanoidRootPart
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local rootPart = character:WaitForChild("HumanoidRootPart") -- Core part for moving the character
+
+            -- Target position (updated to match the image coordinates)
+            local targetPosition = Vector3.new(3525.0185546875, 5990.5298515625, 4049.24755859375)
+
+            -- Create a Tween to move the HumanoidRootPart
+            local tweenInfo = TweenInfo.new(
+                0, -- Duration
+                Enum.EasingStyle.Linear, -- Easing style
+                Enum.EasingDirection.Out -- Easing direction
+            )
+
+            local goal = {
+                CFrame = CFrame.new(targetPosition)
+            }
+
+            local tween = TweenService:Create(rootPart, tweenInfo, goal)
+
+            -- Function to simulate pressing the "J" key
+            local function simulateKeyPress(key)
+                VirtualInputManager:SendKeyEvent(true, key, false, game)
+                task.wait(0.1) -- Small delay to simulate holding the key
+                VirtualInputManager:SendKeyEvent(false, key, false, game)
+                print("Simulated pressing the '" .. key.Name .. "' key!")
+            end
+
+            -- Play the Tween
+            tween:Play()
+
+            -- After the tween completes, simulate the "J" key press
+            tween.Completed:Connect(function()
+                print("Tween complete! Simulating 'J' key press now...")
+                task.wait(3)
+                simulateKeyPress(Enum.KeyCode.J)
+            end)
+        end
+    end,
+})
+
+InvestigateTab:CreateToggle({
+    Name = "Auto CurseObject",
+    Info = "Automatically Collects curseobjects",
+    CurrentValue = false,
+    Flag = "AutoCurseObjectToggle",
+    Callback = function(Value)
+        autoCurseObjectActive = Value
+
+        if Value then
+            -- Start the auto loot loop
+            task.spawn(function()
+                local TweenService = game:GetService("TweenService")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local rootPart = character:WaitForChild("HumanoidRootPart")
+
+                local DropsFolder = game.Workspace.Objects.MissionItems
+
+                -- Function to fire a single ProximityPrompt
+                local function firePrompt(CursedObject)
+                    if CursedObject:IsA("MeshPart") then
+                        local prompt = CursedObject:FindFirstChildOfClass("ProximityPrompt")
+                        if prompt and prompt.ActionText == "Collect" then
+                            -- Tween to the CursedObject position
+                            local tweenInfo = TweenInfo.new(
+                                1, -- Duration (1 second)
+                                Enum.EasingStyle.Linear,
+                                Enum.EasingDirection.Out
+                            )
+                            local goal = {
+                                CFrame = CFrame.new(CursedObject.Position)
+                            }
+                            local tween = TweenService:Create(rootPart, tweenInfo, goal)
+                            tween:Play()
+                            tween.Completed:Connect(function()
+                                prompt:InputHoldBegin()
+                                task.wait(0.5) -- Small delay, to simulate the input hold
+                                prompt:InputHoldEnd()
+                            end)
+                        end
+                    end
+                end
+
+                -- Function to loop through and fire all prompts in parallel
+                local function loopAndFirePrompts()
+                    for _, CursedObject in ipairs(DropsFolder:GetChildren()) do
+                        coroutine.wrap(firePrompt)(CursedObject) -- Fire prompt for each cursed object in parallel
+                    end
+                end
+
+                -- Continuously loop the process (adjust interval as needed)
+                while autoCurseObjectActive do
+                    loopAndFirePrompts()
+                    task.wait(1) -- Wait for 1 second before looping again (can adjust this as needed)
+                end
+            end)
+        end
+    end,
+})
