@@ -24,6 +24,68 @@ local autoCurseObjectActive = false
 local killAuraActive = false
 local proximityFired = false
 
+-- Utility function to simulate key press
+local function simulateKeyPress(key)
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    VirtualInputManager:SendKeyEvent(true, key, false, game)
+    task.wait(0.1)
+    VirtualInputManager:SendKeyEvent(false, key, false, game)
+end
+
+-- Utility function to kill all non-player humanoids
+local function killAllHumanoids()
+    for _, model in pairs(workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local humanoid = model:FindFirstChild("Humanoid")
+            local isPlayer = game:GetService("Players"):GetPlayerFromCharacter(model)
+            if humanoid and not isPlayer then
+                humanoid.Health = 0
+            end
+        end
+    end
+end
+
+-- Utility function to get mobs with humanoids
+local function getMobsWithHumanoids()
+    local mobsWithHumanoids = {}
+    local mobsFolder = workspace:WaitForChild("Objects"):WaitForChild("Mobs")
+
+    for _, mob in ipairs(mobsFolder:GetChildren()) do
+        if mob:IsA("Model") then
+            local humanoid = mob:FindFirstChild("Humanoid")
+            if humanoid then
+                table.insert(mobsWithHumanoids, humanoid)
+            end
+        end
+    end
+
+    return mobsWithHumanoids
+end
+
+-- Utility function to fire proximity prompt
+local function firePrompt(chest)
+    if chest:IsA("Model") then
+        local prompt = chest:FindFirstChildOfClass("ProximityPrompt")
+        if prompt and prompt.ActionText == "Collect" then
+            prompt:InputHoldBegin()
+            task.wait(0.5)
+            prompt:InputHoldEnd()
+            task.wait(2)
+            simulateKeyPress(Enum.KeyCode.BackSlash)
+            task.wait(1)
+            for i = 1, 5 do
+                simulateKeyPress(Enum.KeyCode.Return)
+                task.wait(0.2)
+                simulateKeyPress(Enum.KeyCode.BackSlash)
+            end
+            task.wait(2.6)
+            proximityFired = true
+            return true
+        end
+    end
+    return false
+end
+
 MainTab:CreateToggle({
     Name = "Insta Kill",
     Info = "Kills all non-player humanoids",
@@ -34,15 +96,7 @@ MainTab:CreateToggle({
         if Value then
             task.spawn(function()
                 while killLoopActive do
-                    for _, model in pairs(workspace:GetDescendants()) do
-                        if model:IsA("Model") then
-                            local humanoid = model:FindFirstChild("Humanoid")
-                            local isPlayer = game:GetService("Players"):GetPlayerFromCharacter(model)
-                            if humanoid and not isPlayer then
-                                humanoid.Health = 0
-                            end
-                        end
-                    end
+                    killAllHumanoids()
                     task.wait(0.1)
                 end
             end)
@@ -59,46 +113,21 @@ MainTab:CreateToggle({
         killAuraActive = Value
         if Value then
             task.spawn(function()
-                local function getMobsWithHumanoids()
-                    local mobsWithHumanoids = {}
-                    local mobsFolder = workspace:WaitForChild("Objects"):WaitForChild("Mobs")
-
-                    for _, mob in ipairs(mobsFolder:GetChildren()) do
-                        if mob:IsA("Model") then
-                            local humanoid = mob:FindFirstChild("Humanoid")
-                            if humanoid then
-                                table.insert(mobsWithHumanoids, humanoid)
-                            end
-                        end
-                    end
-
-                    return mobsWithHumanoids
-                end
-
                 while killAuraActive do
                     local mobsWithHumanoids = getMobsWithHumanoids()
-
                     if #mobsWithHumanoids > 0 then
                         local args = {
-                            [1] = 2,  
+                            [1] = 2,
                             [2] = mobsWithHumanoids
                         }
-
                         game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Server"):WaitForChild("Combat"):WaitForChild("M1"):FireServer(unpack(args))
-
-                        print("works")
-                    else
-                        print("no work")
                     end
-
-                    task.wait(0.01)
+                    task.wait(0.1)
                 end
             end)
         end
     end,
 })
-
-local proximityFired = false
 
 BossFarmTab:CreateToggle({
     Name = "Auto Loot",
@@ -110,48 +139,14 @@ BossFarmTab:CreateToggle({
         if Value then
             task.spawn(function()
                 local DropsFolder = game.Workspace.Objects.Drops
-
-                local function firePrompt(chest)
-                    if chest:IsA("Model") then
-                        local prompt = chest:FindFirstChildOfClass("ProximityPrompt")
-                        if prompt and prompt.ActionText == "Collect" then
-                            prompt:InputHoldBegin()
-                            task.wait(0.5)
-                            prompt:InputHoldEnd()
-
-                            local VirtualInputManager = game:GetService("VirtualInputManager")
-
-                            local function simulateKeyPress(key)
-                                VirtualInputManager:SendKeyEvent(true, key, false, game)
-                                task.wait(0.1)
-                                VirtualInputManager:SendKeyEvent(false, key, false, game)
-                            end
-
-                            task.wait(2)
-                            simulateKeyPress(Enum.KeyCode.BackSlash)
-                            task.wait(1)
-                            for i = 1, 5 do
-                                simulateKeyPress(Enum.KeyCode.Return)
-                                task.wait(0.2)
-                                simulateKeyPress(Enum.KeyCode.BackSlash)
-                            end
-                            task.wait(2.6)
-
-                            proximityFired = true -- Important to keep this here for other functionalities
-                            return true
-                        end
-                    end
-                    return false
-                end
-
                 while autoLootActive do
-                    local anyPromptFired = false -- Track if ANY prompt was fired this iteration
+                    local anyPromptFired = false
                     for _, chest in ipairs(DropsFolder:GetChildren()) do
                         if firePrompt(chest) then
                             anyPromptFired = true
                         end
                     end
-                    proximityFired = anyPromptFired -- Update the global flag after checking all chests
+                    proximityFired = anyPromptFired
                     task.wait(0.5)
                 end
             end)
@@ -160,7 +155,6 @@ BossFarmTab:CreateToggle({
         end
     end,
 })
-
 
 BossFarmTab:CreateToggle({
     Name = "Teleport to Boss",
@@ -172,29 +166,14 @@ BossFarmTab:CreateToggle({
         if Value then
             task.wait(1)
             local TweenService = game:GetService("TweenService")
-            local VirtualInputManager = game:GetService("VirtualInputManager")
             local player = game.Players.LocalPlayer
             local character = player.Character or player.CharacterAdded:Wait()
             local rootPart = character:WaitForChild("HumanoidRootPart")
             local targetPosition = Vector3.new(3525.0185546875, 5990.5298515625, 4049.24755859375)
 
-            local tweenInfo = TweenInfo.new(
-                0,
-                Enum.EasingStyle.Linear,
-                Enum.EasingDirection.Out
-            )
-
-            local goal = {
-                CFrame = CFrame.new(targetPosition)
-            }
-
+            local tweenInfo = TweenInfo.new(0, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            local goal = { CFrame = CFrame.new(targetPosition) }
             local tween = TweenService:Create(rootPart, tweenInfo, goal)
-
-            local function simulateKeyPress(key)
-                VirtualInputManager:SendKeyEvent(true, key, false, game)
-                task.wait(0.1)
-                VirtualInputManager:SendKeyEvent(false, key, false, game)
-            end
 
             tween:Play()
             tween.Completed:Connect(function()
@@ -204,6 +183,7 @@ BossFarmTab:CreateToggle({
         end
     end,
 })
+
 BossFarmTab:CreateToggle({
     Name = "Auto Replay",
     Info = "Automatically replays last actions (Backslash, then 5x Enter)",
@@ -213,16 +193,8 @@ BossFarmTab:CreateToggle({
         autoReplayActive = Value
         if Value then
             task.spawn(function()
-                local VirtualInputManager = game:GetService("VirtualInputManager")
-
-                local function simulateKeyPress(key)
-                    VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(false, key, false, game)
-                end
-
                 while autoReplayActive do
-                task.wait(120)
+                    task.wait(120)
                     simulateKeyPress(Enum.KeyCode.BackSlash)
                     task.wait(1)
                     for i = 1, 5 do
@@ -231,7 +203,6 @@ BossFarmTab:CreateToggle({
                         simulateKeyPress(Enum.KeyCode.BackSlash)
                     end
                     task.wait(2.6)
-                    task.wait(0.5)
                 end
             end)
         end
@@ -240,7 +211,7 @@ BossFarmTab:CreateToggle({
 
 InvestigateTab:CreateToggle({
     Name = "Auto CurseObject",
-    Info = "Automatically Collects curseobjects",
+    Info = "Automatically Collects curse objects",
     CurrentValue = false,
     Flag = "AutoCurseObjectToggle",
     Callback = function(Value)
@@ -257,14 +228,8 @@ InvestigateTab:CreateToggle({
                     if CursedObject:IsA("MeshPart") then
                         local prompt = CursedObject:FindFirstChildOfClass("ProximityPrompt")
                         if prompt and prompt.ActionText == "Collect" then
-                            local tweenInfo = TweenInfo.new(
-                                1,
-                                Enum.EasingStyle.Linear,
-                                Enum.EasingDirection.Out
-                            )
-                            local goal = {
-                                CFrame = CFrame.new(CursedObject.Position)
-                            }
+                            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                            local goal = { CFrame = CFrame.new(CursedObject.Position) }
                             local tween = TweenService:Create(rootPart, tweenInfo, goal)
                             tween:Play()
                             tween.Completed:Connect(function()
@@ -313,19 +278,8 @@ InvestigateTab:CreateToggle({
                     end
 
                     local mobRootPart = mob:FindFirstChild("HumanoidRootPart")
-                    local tweenInfo = TweenInfo.new(
-                        1,
-                        Enum.EasingStyle.Linear,
-                        Enum.EasingDirection.Out,
-                        0,
-                        false,
-                        0
-                    )
-
-                    local goal = {
-                        CFrame = CFrame.new(mobRootPart.Position)
-                    }
-
+                    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    local goal = { CFrame = CFrame.new(mobRootPart.Position) }
                     local tween = TweenService:Create(RootPart, tweenInfo, goal)
                     tween:Play()
                 end
