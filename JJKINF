@@ -1,35 +1,35 @@
-local scriptContent = [[
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({
+-- Load Orion Library
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+-- Create the Window
+local Window = OrionLib:MakeWindow({
     Name = "ZeroHub",
-    LoadingTitle = "ZeroHub",
-    LoadingSubtitle = "by zerobaki",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "ZeroHub",
-        FileName = "Config"
-    },
-    KeySystem = false
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "ZeroHub"
 })
 
-local MainTab = Window:CreateTab("Main")
-local BossFarmTab = Window:CreateTab("Boss Farm")
-local InvestigateTab = Window:CreateTab("Investigate")
-local MiscTab = Window:CreateTab("Misc")
-
+-- Variables for toggles
 local killLoopActive = false
-local autoCollectActive = false
 local autoLootActive = false
 local teleportToBossActive = false
-local autoCurseObjectActive = false
 local killAuraActive = false
+local autoCurseObjectActive = false
+local autoCollectActive = false
 local proximityFired = false
+local autoReplayActive = false
+local autoMobsActive = false
 
-MainTab:CreateToggle({
+-- Main Tab
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+MainTab:AddToggle({
     Name = "Insta Kill",
-    Info = "Kills all non-player humanoids",
-    CurrentValue = false,
-    Flag = "KillToggle",
+    Default = false,
     Callback = function(Value)
         killLoopActive = Value
         if Value then
@@ -48,14 +48,12 @@ MainTab:CreateToggle({
                 end
             end)
         end
-    end,
+    end
 })
 
-MainTab:CreateToggle({
+MainTab:AddToggle({
     Name = "KillAura",
-    Info = "Automatically attacks nearby enemies",
-    CurrentValue = false,
-    Flag = "KillAuraToggle",
+    Default = false,
     Callback = function(Value)
         killAuraActive = Value
         if Value then
@@ -81,97 +79,54 @@ MainTab:CreateToggle({
 
                     if #mobsWithHumanoids > 0 then
                         local args = {
-                            [1] = 2,  
+                            [1] = 2,
                             [2] = mobsWithHumanoids
                         }
 
                         game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Server"):WaitForChild("Combat"):WaitForChild("M1"):FireServer(unpack(args))
-
-                        print("works")
-                    else
-                        print("no work")
                     end
 
                     task.wait(0.01)
                 end
             end)
         end
-    end,
+    end
 })
 
-MiscTab:CreateToggle({
+-- Misc Tab
+local MiscTab = Window:MakeTab({
+    Name = "Misc",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+MiscTab:AddToggle({
     Name = "Auto Loot",
-    Info = "Automatically loots nearby chests",
-    CurrentValue = false,
-    Flag = "AutoLootToggle",
+    Default = false,
     Callback = function(Value)
         autoLootActive = Value
         if Value then
             task.spawn(function()
-                local DropsFolder = game.Workspace.Objects.Drops
-                local function firePrompt(chest)
-                    if chest:IsA("Model") then
-                        local prompt = chest:FindFirstChildOfClass("ProximityPrompt")
-                        if prompt and prompt.ActionText == "Collect" then
-                            prompt:InputHoldBegin()
-                            task.wait(0.1)
-                            prompt:InputHoldEnd()
-
-                            -- Make screen blurred and display "Collecting chest in progress"
-                            local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-                            local gui = Instance.new("ScreenGui")
-                            gui.Name = "CollectingChestGui"
-                            gui.Parent = playerGui
-
-                            local blurEffect = Instance.new("BlurEffect")
-                            blurEffect.Size = 24
-                            blurEffect.Parent = game.Lighting
-
-                            local textLabel = Instance.new("TextLabel")
-                            textLabel.Text = "Collecting chest in progress"
-                            textLabel.Size = UDim2.new(0, 400, 0, 100)
-                            textLabel.Position = UDim2.new(0.5, -200, 0.5, -50)
-                            textLabel.TextColor3 = Color3.new(1, 1, 1)
-                            textLabel.BackgroundTransparency = 1
-                            textLabel.TextScaled = true
-                            textLabel.Parent = gui
-
-                            task.delay(10, function()
-                                blurEffect:Destroy()
-                                gui:Destroy()
-                            end)
-
-                            proximityFired = true
-                            return true
-                        end
-                    end
-                    return false
-                end
-                local function loopAndFirePrompts()
-                    local firedAnyPrompt = false
-                    for _, chest in ipairs(DropsFolder:GetChildren()) do
-                        if firePrompt(chest) then
-                            firedAnyPrompt = true
-                        end
-                    end
-                    proximityFired = firedAnyPrompt
-                end
                 while autoLootActive do
-                    loopAndFirePrompts()
+                    local DropsFolder = game.Workspace.Objects.Drops
+                    for _, chest in ipairs(DropsFolder:GetChildren()) do
+                        if chest:IsA("Model") then
+                            local prompt = chest:FindFirstChildOfClass("ProximityPrompt")
+                            if prompt and prompt.ActionText == "Collect" then
+                                fireproximityprompt(prompt)
+                            end
+                        end
+                    end
                     task.wait(0.5)
                 end
             end)
-        else
-            proximityFired = false
         end
-    end,
+    end
 })
 
-MiscTab:CreateToggle({
+MiscTab:AddToggle({
     Name = "Auto Collect",
-    Info = "Automatically collects nearby items",
-    CurrentValue = false,
-    Flag = "AutoCollectToggle",
+    Default = false,
     Callback = function(Value)
         autoCollectActive = Value
         if Value then
@@ -179,25 +134,22 @@ MiscTab:CreateToggle({
                 local VirtualInputManager = game:GetService("VirtualInputManager")
                 local function simulateKeyPress(key)
                     VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    task.wait(0.05)  -- Reduced wait time
+                    task.wait(0.05)
                     VirtualInputManager:SendKeyEvent(false, key, false, game)
                 end
-                local function simulateKeySequence()
+
+                while autoCollectActive do
                     if proximityFired then
-                        task.wait(0.5)  -- Reduced initial wait time
+                        task.wait(0.5)
                         simulateKeyPress(Enum.KeyCode.BackSlash)
-                        task.wait(0.5)  -- Reduced wait time
+                        task.wait(0.5)
                         for i = 1, 8 do
                             simulateKeyPress(Enum.KeyCode.Return)
                             simulateKeyPress(Enum.KeyCode.BackSlash)
-                            task.wait(0.1)  -- Reduced wait time
+                            task.wait(0.1)
                         end
-                        task.wait(0.2)  -- Reduced wait time
                         proximityFired = false
                     end
-                end
-                while autoCollectActive do
-                    simulateKeySequence()
                     task.wait(1)
                 end
             end)
@@ -205,343 +157,177 @@ MiscTab:CreateToggle({
     end
 })
 
-BossFarmTab:CreateToggle({
+-- Boss Farm Tab
+local BossFarmTab = Window:MakeTab({
+    Name = "Boss Farm",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+BossFarmTab:AddToggle({
     Name = "Teleport to Boss (Sukuna)",
-    Info = "Teleports to the boss area",
-    CurrentValue = false,
-    Flag = "TeleportToBossToggle",
+    Default = false,
     Callback = function(Value)
         teleportToBossActive = Value
         if Value then
             task.spawn(function()
                 local TweenService = game:GetService("TweenService")
-                local VirtualInputManager = game:GetService("VirtualInputManager")
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
                 local targetPosition = Vector3.new(3525.0185546875, 5990.5298515625, 4049.24755859375)
 
-                local tweenInfo = TweenInfo.new(
-                    0,
-                    Enum.EasingStyle.Linear,
-                    Enum.EasingDirection.Out
-                )
-
-                local function tweenToTarget()
-                    local goal = {
-                        CFrame = CFrame.new(targetPosition)
-                    }
-
-                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
-
-                    local function simulateKeyPress(key)
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        task.wait(0.1)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-
-                    tween:Play()
-                    tween.Completed:Connect(function()
-                        task.wait(3)
-                        simulateKeyPress(Enum.KeyCode.J)
-                    end)
-
-                    tween.Completed:Wait()
-                end
-
                 while teleportToBossActive do
-                    tweenToTarget()
+                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    local goal = {CFrame = CFrame.new(targetPosition)}
+                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
+                    tween:Play()
+                    tween.Completed:Wait()
+                    task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
 
-BossFarmTab:CreateToggle({
+BossFarmTab:AddToggle({
     Name = "Teleport to Boss (Toji)",
-    Info = "Teleports to the boss area",
-    CurrentValue = false,
-    Flag = "TeleportToBossTojiToggle",
+    Default = false,
     Callback = function(Value)
-        teleportToBossTojiActive = Value -- Fixed variable name
+        teleportToBossTojiActive = Value
         if Value then
             task.spawn(function()
                 local TweenService = game:GetService("TweenService")
-                local VirtualInputManager = game:GetService("VirtualInputManager")
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
                 local targetPosition = Vector3.new(272.9618835449219, 386.15264892578125, 412.51019287109375)
 
-                local tweenInfo = TweenInfo.new(
-                    0,
-                    Enum.EasingStyle.Linear,
-                    Enum.EasingDirection.Out
-                )
-
-                local function tweenToTarget()
-                    local goal = {
-                        CFrame = CFrame.new(targetPosition)
-                    }
-
+                while teleportToBossTojiActive do
+                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    local goal = {CFrame = CFrame.new(targetPosition)}
                     local tween = TweenService:Create(rootPart, tweenInfo, goal)
-
-                    local function simulateKeyPress(key)
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        task.wait(0.1)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-
                     tween:Play()
-                    tween.Completed:Connect(function()
-                        task.wait(3)
-                        simulateKeyPress(Enum.KeyCode.J)
-                    end)
-
                     tween.Completed:Wait()
-                end
-
-                while teleportToBossTojiActive do -- Fixed loop condition
-                    tweenToTarget()
                     task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
 
-BossFarmTab:CreateToggle({
+BossFarmTab:AddToggle({
     Name = "Teleport to Boss (Jogo)",
-    Info = "Teleports to the boss area",
-    CurrentValue = false,
-    Flag = "TeleportToBossJogoToggle", 
+    Default = false,
     Callback = function(Value)
-        teleportToBossJogoActive = Value -- Fixed variable name
+        teleportToBossJogoActive = Value
         if Value then
             task.spawn(function()
                 local TweenService = game:GetService("TweenService")
-                local VirtualInputManager = game:GetService("VirtualInputManager")
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                local targetPosition = Vector3.new(-22.410839080810547, 362.6210632324219, 68.58181762695312) -- Updated position for Jogo
+                local targetPosition = Vector3.new(-22.410839080810547, 362.6210632324219, 68.58181762695312)
 
-                local tweenInfo = TweenInfo.new(
-                    0,
-                    Enum.EasingStyle.Linear,
-                    Enum.EasingDirection.Out
-                )
-
-                local function tweenToTarget()
-                    local goal = {
-                        CFrame = CFrame.new(targetPosition)
-                    }
-
+                while teleportToBossJogoActive do
+                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    local goal = {CFrame = CFrame.new(targetPosition)}
                     local tween = TweenService:Create(rootPart, tweenInfo, goal)
-
-                    local function simulateKeyPress(key)
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        task.wait(0.1)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-
                     tween:Play()
-                    tween.Completed:Connect(function()
-                        task.wait(3)
-                        simulateKeyPress(Enum.KeyCode.J)
-                    end)
-
                     tween.Completed:Wait()
-                end
-
-                while teleportToBossJogoActive do -- Fixed loop condition
-                    tweenToTarget()
                     task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
 
-BossFarmTab:CreateToggle({
+BossFarmTab:AddToggle({
     Name = "Teleport to Boss (Mahito)",
-    Info = "Teleports to the boss area",
-    CurrentValue = false,
-    Flag = "TeleportToBossMahitoToggle",
+    Default = false,
     Callback = function(Value)
         teleportToBossMahitoActive = Value
         if Value then
             task.spawn(function()
-                local TweenService = game:GetService("TweenService")
-                local VirtualInputManager = game:GetService("VirtualInputManager")
+                                local TweenService = game:GetService("TweenService")
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                -- Fixed Vector3 syntax
                 local targetPosition = Vector3.new(-3186.500244140625, -171.90335083007812, 3535.5224609375)
 
-                local tweenInfo = TweenInfo.new(
-                    0,
-                    Enum.EasingStyle.Linear,
-                    Enum.EasingDirection.Out
-                )
-
-                local function tweenToTarget()
-                    local goal = {
-                        CFrame = CFrame.new(targetPosition)
-                    }
-
+                while teleportToBossMahitoActive do
+                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    local goal = {CFrame = CFrame.new(targetPosition)}
                     local tween = TweenService:Create(rootPart, tweenInfo, goal)
-
-                    local function simulateKeyPress(key)
-                        VirtualInputManager:SendKeyEvent(true, key, false, game)
-                        task.wait(0.1)
-                        VirtualInputManager:SendKeyEvent(false, key, false, game)
-                    end
-
                     tween:Play()
-                    tween.Completed:Connect(function()
-                        task.wait(3)
-                        simulateKeyPress(Enum.KeyCode.J)
-                    end)
-
                     tween.Completed:Wait()
-                end
-
-                while teleportToBossMahitoActive do -- Fixed variable name
-                    tweenToTarget()
-                    task.wait(1) -- Added wait to prevent excessive loops
-                end
-            end)
-        end
-    end,
-})
-BossFarmTab:CreateToggle({
-    Name = "Auto Replay",
-    Info = "Automatically replays last actions (Backslash, then 5x Enter)",
-    CurrentValue = false,
-    Flag = "AutoReplayToggle",
-    Callback = function(Value)
-        autoReplayActive = Value
-        if Value then
-            task.spawn(function()
-                local VirtualInputManager = game:GetService("VirtualInputManager")
-
-                local function simulateKeyPress(key)
-                    VirtualInputManager:SendKeyEvent(true, key, false, game)
-                    task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(false, key, false, game)
-                end
-
-                while autoReplayActive do
-                task.wait(160)
-                    simulateKeyPress(Enum.KeyCode.BackSlash)
                     task.wait(1)
-                    for i = 1, 5 do
-                        simulateKeyPress(Enum.KeyCode.Return)
-                        task.wait(0.2)
-                        simulateKeyPress(Enum.KeyCode.BackSlash)
-                    end
-                    task.wait(2.6)
-                    task.wait(0.5)
                 end
             end)
         end
-    end,
+    end
 })
 
-InvestigateTab:CreateToggle({
+-- Investigate Tab
+local InvestigateTab = Window:MakeTab({
+    Name = "Investigate",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+InvestigateTab:AddToggle({
     Name = "Auto CurseObject",
-    Info = "Automatically Collects curseobjects",
-    CurrentValue = false,
-    Flag = "AutoCurseObjectToggle",
+    Default = false,
     Callback = function(Value)
         autoCurseObjectActive = Value
         if Value then
             task.spawn(function()
-                local TweenService = game:GetService("TweenService")
-                local player = game.Players.LocalPlayer
-                local character = player.Character or player.CharacterAdded:Wait()
-                local rootPart = character:WaitForChild("HumanoidRootPart")
-                
                 while autoCurseObjectActive do
-                    local cursedObject = game.Workspace.Objects.MissionItems.CursedObject.Collect
+                    local cursedObject = workspace:FindFirstChild("Objects"):FindFirstChild("MissionItems"):FindFirstChild("CursedObject")
                     if cursedObject then
-                        -- Teleport to object
-                        local tweenInfo = TweenInfo.new(
-                            1,
-                            Enum.EasingStyle.Linear,
-                            Enum.EasingDirection.Out
-                        )
-                        local goal = {
-                            CFrame = CFrame.new(cursedObject.Position)
-                        }
-                        local tween = TweenService:Create(rootPart, tweenInfo, goal)
+                        local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                        local goal = {CFrame = CFrame.new(cursedObject.Position)}
+                        local tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart, tweenInfo, goal)
                         tween:Play()
                         tween.Completed:Wait()
-                        
-                        -- Fire proximity prompt
-                        fireproximityprompt(cursedObject)
+                        fireproximityprompt(cursedObject:FindFirstChildOfClass("ProximityPrompt"))
                     end
                     task.wait(1)
                 end
             end)
         end
-    end,
+    end
 })
 
-InvestigateTab:CreateToggle({
+InvestigateTab:AddToggle({
     Name = "Auto Mobs",
-    Info = "Automatically handles mobs",
-    CurrentValue = false,
-    Flag = "AutoMobsToggle",
+    Default = false,
     Callback = function(Value)
         autoMobsActive = Value
         if Value then
             task.spawn(function()
-                local TweenService = game:GetService("TweenService")
-                local Players = game:GetService("Players")
-                local LocalPlayer = Players.LocalPlayer
-                local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local RootPart = Character:WaitForChild("HumanoidRootPart")
-                local MobsFolder = workspace:WaitForChild("Objects"):WaitForChild("Mobs")
-
-                local function tweenToMob(mob)
-                    if not mob:IsA("Model") or not mob:FindFirstChild("HumanoidRootPart") then
-                        return
-                    end
-
-                    local mobRootPart = mob:FindFirstChild("HumanoidRootPart")
-                    local tweenInfo = TweenInfo.new(
-                        1,
-                        Enum.EasingStyle.Linear,
-                        Enum.EasingDirection.Out,
-                        0,
-                        false,
-                        0
-                    )
-
-                    local goal = {
-                        CFrame = CFrame.new(mobRootPart.Position)
-                    }
-
-                    local tween = TweenService:Create(RootPart, tweenInfo, goal)
-                    tween:Play()
-                end
-
                 while autoMobsActive do
-                    local mobs = MobsFolder:GetChildren()
-                    if #mobs > 0 then
-                        local randomMobIndex = math.random(1, #mobs)
-                        local randomMob = mobs[randomMobIndex]
-                        tweenToMob(randomMob)
+                    local mobsFolder = workspace:FindFirstChild("Objects"):FindFirstChild("Mobs")
+                    if mobsFolder then
+                        for _, mob in ipairs(mobsFolder:GetChildren()) do
+                            if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") then
+                                local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                                local goal = {CFrame = CFrame.new(mob.HumanoidRootPart.Position)}
+                                local tween = game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart, tweenInfo, goal)
+                                tween:Play()
+                                tween.Completed:Wait()
+                                task.wait(1)
+                            end
+                        end
                     end
-                    task.wait(5)
+                    task.wait(2)
                 end
             end)
         end
-    end,
+    end
 })
-]]
 
-loadstring(scriptContent)()
+-- Initialize Orion Library
+OrionLib:Init()
+
+               
