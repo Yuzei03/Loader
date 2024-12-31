@@ -324,7 +324,7 @@ BossFarmTab:CreateToggle({
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                local targetPosition = Vector3.new(-1780.1263427734375, 5990.52978515625, -6716.83349609375) -- Updated position for Jogo
+                local targetPosition = Vector3.new(-22.410839080810547  362.6210632324219  68.58181762695312) -- Updated position for Jogo
 
                 local tweenInfo = TweenInfo.new(
                     0,
