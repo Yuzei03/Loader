@@ -256,6 +256,163 @@ BossFarmTab:CreateToggle({
         end
     end,
 })
+
+BossFarmTab:CreateToggle({
+    Name = "Teleport to Boss (Toji)",
+    Info = "Teleports to the boss area",
+    CurrentValue = false,
+    Flag = "TeleportToBossTojiToggle",
+    Callback = function(Value)
+        teleportToBossTojiActive = Value
+        if Value then
+            task.spawn(function()
+                local TweenService = game:GetService("TweenService")
+                local VirtualInputManager = game:GetService("VirtualInputManager")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local rootPart = character:WaitForChild("HumanoidRootPart")
+                local targetPosition = Vector3.new(272.9618835449219, 386.15264892578125, 412.51019287109375)
+
+                local tweenInfo = TweenInfo.new(
+                    0,
+                    Enum.EasingStyle.Linear,
+                    Enum.EasingDirection.Out
+                )
+
+                local function tweenToTarget()
+                    local goal = {
+                        CFrame = CFrame.new(targetPosition)
+                    }
+
+                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
+
+                    local function simulateKeyPress(key)
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        task.wait(0.1)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    end
+
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        task.wait(3)
+                        simulateKeyPress(Enum.KeyCode.J)
+                    end)
+
+                    tween.Completed:Wait()
+                end
+
+                while teleportToBossActive do
+                    tweenToTarget()
+                end
+            end)
+        end
+    end,
+})
+
+BossFarmTab:CreateToggle({
+    Name = "Teleport to Boss (Jogo)",
+    Info = "Teleports to the boss area",
+    CurrentValue = false,
+    Flag = "TeleportToBossJogoToggle",
+    Callback = function(Value)
+        teleportToBossJogoActive = Value
+        if Value then
+            task.spawn(function()
+                local TweenService = game:GetService("TweenService")
+                local VirtualInputManager = game:GetService("VirtualInputManager")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local rootPart = character:WaitForChild("HumanoidRootPart")
+                local targetPosition = Vector3.new(272.9618835449219, 386.15264892578125, 412.51019287109375)
+
+                local tweenInfo = TweenInfo.new(
+                    0,
+                    Enum.EasingStyle.Linear,
+                    Enum.EasingDirection.Out
+                )
+
+                local function tweenToTarget()
+                    local goal = {
+                        CFrame = CFrame.new(targetPosition)
+                    }
+
+                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
+
+                    local function simulateKeyPress(key)
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        task.wait(0.1)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    end
+
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        task.wait(3)
+                        simulateKeyPress(Enum.KeyCode.J)
+                    end)
+
+                    tween.Completed:Wait()
+                end
+
+                while teleportToBossActive do
+                    tweenToTarget()
+                end
+            end)
+        end
+    end,
+})
+
+BossFarmTab:CreateToggle({
+    Name = "Teleport to Boss (Mahito)",
+    Info = "Teleports to the boss area",
+    CurrentValue = false,
+    Flag = "TeleportToBossMahitoToggle",
+    Callback = function(Value)
+        teleportToBossMahitoActive = Value
+        if Value then
+            task.spawn(function()
+                local TweenService = game:GetService("TweenService")
+                local VirtualInputManager = game:GetService("VirtualInputManager")
+                local player = game.Players.LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local rootPart = character:WaitForChild("HumanoidRootPart")
+                local targetPosition = Vector3.new(-3186.500244140625  -171.90335083007812  3535.5224609375)
+
+                local tweenInfo = TweenInfo.new(
+                    0,
+                    Enum.EasingStyle.Linear,
+                    Enum.EasingDirection.Out
+                )
+
+                local function tweenToTarget()
+                    local goal = {
+                        CFrame = CFrame.new(targetPosition)
+                    }
+
+                    local tween = TweenService:Create(rootPart, tweenInfo, goal)
+
+                    local function simulateKeyPress(key)
+                        VirtualInputManager:SendKeyEvent(true, key, false, game)
+                        task.wait(0.1)
+                        VirtualInputManager:SendKeyEvent(false, key, false, game)
+                    end
+
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        task.wait(3)
+                        simulateKeyPress(Enum.KeyCode.J)
+                    end)
+
+                    tween.Completed:Wait()
+                end
+
+                while teleportToBossActive do
+                    tweenToTarget()
+                end
+            end)
+        end
+    end,
+})
+
 BossFarmTab:CreateToggle({
     Name = "Auto Replay",
     Info = "Automatically replays last actions (Backslash, then 5x Enter)",
