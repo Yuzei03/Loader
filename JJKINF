@@ -206,7 +206,7 @@ MiscTab:CreateToggle({
 })
 
 BossFarmTab:CreateToggle({
-    Name = "Teleport to Boss",
+    Name = "Teleport to Boss (Sukuna)",
     Info = "Teleports to the boss area",
     CurrentValue = false,
     Flag = "TeleportToBossToggle",
@@ -263,7 +263,7 @@ BossFarmTab:CreateToggle({
     CurrentValue = false,
     Flag = "TeleportToBossTojiToggle",
     Callback = function(Value)
-        teleportToBossTojiActive = Value
+        teleportToBossTojiActive = Value -- Fixed variable name
         if Value then
             task.spawn(function()
                 local TweenService = game:GetService("TweenService")
@@ -301,8 +301,9 @@ BossFarmTab:CreateToggle({
                     tween.Completed:Wait()
                 end
 
-                while teleportToBossActive do
+                while teleportToBossTojiActive do -- Fixed loop condition
                     tweenToTarget()
+                    task.wait(1)
                 end
             end)
         end
@@ -313,9 +314,9 @@ BossFarmTab:CreateToggle({
     Name = "Teleport to Boss (Jogo)",
     Info = "Teleports to the boss area",
     CurrentValue = false,
-    Flag = "TeleportToBossJogoToggle",
+    Flag = "TeleportToBossJogoToggle", 
     Callback = function(Value)
-        teleportToBossJogoActive = Value
+        teleportToBossJogoActive = Value -- Fixed variable name
         if Value then
             task.spawn(function()
                 local TweenService = game:GetService("TweenService")
@@ -323,7 +324,7 @@ BossFarmTab:CreateToggle({
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                local targetPosition = Vector3.new(272.9618835449219, 386.15264892578125, 412.51019287109375)
+                local targetPosition = Vector3.new(-1780.1263427734375, 5990.52978515625, -6716.83349609375) -- Updated position for Jogo
 
                 local tweenInfo = TweenInfo.new(
                     0,
@@ -353,8 +354,9 @@ BossFarmTab:CreateToggle({
                     tween.Completed:Wait()
                 end
 
-                while teleportToBossActive do
+                while teleportToBossJogoActive do -- Fixed loop condition
                     tweenToTarget()
+                    task.wait(1)
                 end
             end)
         end
