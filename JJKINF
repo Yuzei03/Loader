@@ -375,7 +375,8 @@ BossFarmTab:CreateToggle({
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                local targetPosition = Vector3.new(-3186.500244140625  -171.90335083007812  3535.5224609375)
+                -- Fixed Vector3 syntax
+                local targetPosition = Vector3.new(-3186.500244140625, -171.90335083007812, 3535.5224609375)
 
                 local tweenInfo = TweenInfo.new(
                     0,
@@ -405,14 +406,14 @@ BossFarmTab:CreateToggle({
                     tween.Completed:Wait()
                 end
 
-                while teleportToBossActive do
+                while teleportToBossMahitoActive do -- Fixed variable name
                     tweenToTarget()
+                    task.wait(1) -- Added wait to prevent excessive loops
                 end
             end)
         end
     end,
 })
-
 BossFarmTab:CreateToggle({
     Name = "Auto Replay",
     Info = "Automatically replays last actions (Backslash, then 5x Enter)",
@@ -460,39 +461,26 @@ InvestigateTab:CreateToggle({
                 local player = game.Players.LocalPlayer
                 local character = player.Character or player.CharacterAdded:Wait()
                 local rootPart = character:WaitForChild("HumanoidRootPart")
-                local DropsFolder = game.Workspace.Objects.MissionItems
-
-                local function firePrompt(CursedObject)
-                    if CursedObject:IsA("MeshPart") then
-                        local prompt = CursedObject:FindFirstChildOfClass("ProximityPrompt")
-                        if prompt and prompt.ActionText == "Collect" then
-                            local tweenInfo = TweenInfo.new(
-                                1,
-                                Enum.EasingStyle.Linear,
-                                Enum.EasingDirection.Out
-                            )
-                            local goal = {
-                                CFrame = CFrame.new(CursedObject.Position)
-                            }
-                            local tween = TweenService:Create(rootPart, tweenInfo, goal)
-                            tween:Play()
-                            tween.Completed:Connect(function()
-                                prompt:InputHoldBegin()
-                                task.wait(0.5)
-                                prompt:InputHoldEnd()
-                            end)
-                        end
-                    end
-                end
-
-                local function loopAndFirePrompts()
-                    for _, CursedObject in ipairs(DropsFolder:GetChildren()) do
-                        coroutine.wrap(firePrompt)(CursedObject)
-                    end
-                end
-
+                
                 while autoCurseObjectActive do
-                    loopAndFirePrompts()
+                    local cursedObject = game.Workspace.Objects.MissionItems.CursedObject.Collect
+                    if cursedObject then
+                        -- Teleport to object
+                        local tweenInfo = TweenInfo.new(
+                            1,
+                            Enum.EasingStyle.Linear,
+                            Enum.EasingDirection.Out
+                        )
+                        local goal = {
+                            CFrame = CFrame.new(cursedObject.Position)
+                        }
+                        local tween = TweenService:Create(rootPart, tweenInfo, goal)
+                        tween:Play()
+                        tween.Completed:Wait()
+                        
+                        -- Fire proximity prompt
+                        fireproximityprompt(cursedObject)
+                    end
                     task.wait(1)
                 end
             end)
